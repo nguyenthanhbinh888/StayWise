@@ -16,6 +16,13 @@ next-env.d.ts
 *.md
 !/README.md
 
+# Reports, artifacts, UML revision docs, and exported Word/PDF files
+product_report/
+staywise_report_revision/
+artifacts/
+*.docx
+*.pdf
+
 # Python bytecode
 __pycache__/
 *.py[cod]
