@@ -1,0 +1,246 @@
+@startuml overall_class_diagram
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam classStereotypeFontSize 10
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #17324D
+  FontStyle bold
+}
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #17324D
+  HeaderBackgroundColor #EAF0F6
+}
+
+title Biểu đồ Lớp Tổng thể (Overall UML Class Diagram) — Hệ thống StayWise
+
+package "1. Presentation Layer (src/app, src/components, src/context)" {
+  class StoreContext <<context>> {
+    + isHydrated : boolean
+    + areas : Area[]
+    + contributions : Contribution[]
+    + comparisonIds : string[]
+    + savedCalculatorPlan : CalculatorInputs | null
+    + addArea(area : Area) : void
+    + updateArea(id : string, updated : Partial<Area>) : void
+    + deleteArea(id : string) : void
+    + resetAllData() : void
+    + submitContribution(data) : Contribution
+    + approveContribution(id : string) : void
+    + rejectContribution(id : string) : void
+    + toggleComparison(areaId : string) : boolean
+    + savePlan(plan : CalculatorInputs) : void
+  }
+
+  class ToastContext <<context>> {
+    + success(title : string, msg? : string) : void
+    + warning(title : string, msg? : string) : void
+    + error(title : string, msg? : string) : void
+  }
+
+  class ExplorePage <<component>>
+  class AreaDetailPage <<component>>
+  class CalculatorPage <<component>>
+  class RecommendationsPage <<component>>
+  class ComparePage <<component>>
+  class CommunityPage <<component>>
+  class ContributePage <<component>>
+  class DashboardPage <<component>>
+  class AdminAreasPage <<component>>
+  class AdminContributionsPage <<component>>
+  class AdminReportsPage <<component>>
+  class PreferenceForm <<component>>
+  class ContributionForm <<component>>
+  class LeafletMap <<component>>
+}
+
+package "2. Application & Domain Logic (src/lib)" {
+  class CostCalculator <<module>> {
+    + calculateMonthlyCost(rent, food, transport, utilities, other) : number
+    + calculateAreaTotalCost(averageRent, expenses) : number
+    + calculateBudgetBreakdown(inputs : CalculatorInputs) : CalculatorBreakdown
+  }
+
+  class DistanceCalculator <<module>> {
+    + calculateDistance(lat1, lon1, lat2, lon2) : number
+  }
+
+  class ScoreCalculator <<module>> {
+    + calculateOverallLivingScore(scores : LivingScores) : number
+    + findComparisonHighlights(areas : Area[]) : ComparisonHighlight
+  }
+
+  class RecommendationEngine <<module>> {
+    + recommendAreas(areas : Area[], prefs : RecommendationPreferences) : RecommendedArea[]
+  }
+
+  class ValidationSchemas <<module>> {
+    + contributionFormSchema : ZodSchema
+    + areaFormSchema : ZodSchema
+  }
+
+  class CsvExporter <<module>> {
+    + exportAreasToCSV(areas : Area[]) : void
+  }
+}
+
+package "3. Domain Models (src/types)" {
+  class Area <<entity>> {
+    + id : string
+    + slug : string
+    + name : string
+    + city : CityCode
+    + displayCity : string
+    + latitude : number
+    + longitude : number
+    + rent : RentRange
+    + monthlyExpenses : MonthlyExpenses
+    + livingScores : LivingScores
+    + amenities : AmenityCounts
+    + updatedAt : string
+  }
+
+  class AmenityItem <<entity>> {
+    + id : string
+    + name : string
+    + category : AmenityCategory
+    + areaId : string
+    + latitude : number
+    + longitude : number
+    + distanceKm? : number
+  }
+
+  class AreaReview <<entity>> {
+    + id : string
+    + areaId : string
+    + authorName : string
+    + overallRating : number
+    + content : string
+    + createdAt : string
+  }
+
+  class Contribution <<entity>> {
+    + id : string
+    + areaId : string
+    + authorName : string
+    + category : ContributionCategory
+    + rating : number
+    + content : string
+    + status : ContributionStatus
+    + createdAt : string
+  }
+
+  class Destination <<entity>> {
+    + id : string
+    + name : string
+    + city : CityCode
+    + category : string
+    + latitude : number
+    + longitude : number
+  }
+
+  class RecommendationPreferences <<entity>> {
+    + city : CityCode
+    + monthlyBudget : number
+    + maximumRent : number
+    + destination : Object | null
+    + maximumDistanceKm : number
+    + priorities : Object
+  }
+
+  class RecommendedArea <<entity>> {
+    + areaId : string
+    + rank : number
+    + totalScore : number
+    + totalEstimatedCost : number
+    + distanceKm : number | null
+    + reasons : string[]
+  }
+
+  class CalculatorInputs <<entity>> {
+    + monthlyBudget : number
+    + rent : number
+    + food : number
+    + transportation : number
+    + electricity : number
+    + water : number
+    + internet : number
+  }
+}
+
+package "4. Data Persistence (src/lib/storage, src/data)" {
+  class storageService <<module>> {
+    + getAreas() : Area[]
+    + saveAreas(areas : Area[]) : void
+    + getContributions() : Contribution[]
+    + saveContributions(list : Contribution[]) : void
+    + getComparisonIds() : string[]
+    + saveComparisonIds(ids : string[]) : void
+    + getSavedCalculatorPlan() : CalculatorInputs | null
+    + saveCalculatorPlan(plan : CalculatorInputs) : void
+    + resetAll() : void
+  }
+
+  class SeedData <<module>> {
+    + SEED_AREAS : Area[]
+    + SEED_AMENITIES : AmenityItem[]
+    + SEED_REVIEWS : AreaReview[]
+    + SEED_CONTRIBUTIONS : Contribution[]
+    + SEED_DESTINATIONS : Destination[]
+  }
+}
+
+' Relationships Presentation -> Context/Logic
+ExplorePage --> StoreContext
+ExplorePage *-- LeafletMap
+AreaDetailPage --> StoreContext
+AreaDetailPage ..> CostCalculator
+AreaDetailPage ..> ScoreCalculator
+CalculatorPage --> StoreContext
+CalculatorPage ..> CostCalculator
+RecommendationsPage *-- PreferenceForm
+RecommendationsPage --> StoreContext
+RecommendationsPage ..> RecommendationEngine
+ComparePage --> StoreContext
+ComparePage ..> ScoreCalculator
+CommunityPage --> StoreContext
+ContributePage *-- ContributionForm
+ContributePage --> StoreContext
+ContributePage --> ToastContext
+ContributionForm ..> ValidationSchemas
+DashboardPage --> StoreContext
+AdminAreasPage --> StoreContext
+AdminAreasPage ..> ValidationSchemas
+AdminContributionsPage --> StoreContext
+AdminContributionsPage --> ToastContext
+AdminReportsPage --> StoreContext
+AdminReportsPage ..> CsvExporter
+
+' Logic dependencies
+RecommendationEngine ..> CostCalculator
+RecommendationEngine ..> DistanceCalculator
+RecommendationEngine ..> Area
+RecommendationEngine ..> RecommendationPreferences
+RecommendationEngine ..> RecommendedArea
+PreferenceForm ..> Destination
+CsvExporter ..> CostCalculator
+CsvExporter ..> Area
+
+' Context & Persistence
+StoreContext --> storageService
+StoreContext "1" o-- "0..*" Area
+StoreContext "1" o-- "0..*" Contribution
+StoreContext "0..1" o-- "0..1" CalculatorInputs
+storageService ..> SeedData
+
+' Domain associations
+Area "1" -- "0..*" AmenityItem : areaId
+Area "1" -- "0..*" AreaReview : areaId
+Area "1" -- "0..*" Contribution : areaId
+@enduml

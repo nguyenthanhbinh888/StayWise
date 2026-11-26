@@ -1,0 +1,115 @@
+@startuml vopc_recommendation
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam classStereotypeFontSize 11
+skinparam classAttributeIconSize 0
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #17324D
+  HeaderBackgroundColor #EAF0F6
+  FontColor #182230
+}
+
+title VOPC Diagram — UC_04: Gợi ý khu vực tối ưu đa tiêu chí
+
+class RecommendationsPage <<boundary>> {
+  - preferences : RecommendationPreferences
+  - recommendations : RecommendedArea[]
+  - chartData : Object[]
+  + render() : JSX.Element
+}
+
+class PreferenceForm <<boundary>> {
+  + preferences : RecommendationPreferences
+  + destinations : Destination[]
+  + onChange(prefs : RecommendationPreferences) : void
+  + onSubmit() : void
+}
+
+class RecommendationCard <<boundary>> {
+  + item : RecommendedArea
+  + area : Area
+  + render() : JSX.Element
+}
+
+class StoreContext <<control>> {
+  + areas : Area[]
+  + isInComparison(areaId : string) : boolean
+  + toggleComparison(areaId : string) : boolean
+}
+
+class RecommendationEngine <<control>> {
+  + recommendAreas(areas : Area[], preferences : RecommendationPreferences) : RecommendedArea[]
+}
+
+class CostCalculator <<control>> {
+  + calculateAreaTotalCost(averageRent : number, expenses : MonthlyExpenses) : number
+}
+
+class DistanceCalculator <<control>> {
+  + calculateDistance(lat1 : number, lon1 : number, lat2 : number, lon2 : number) : number
+}
+
+class Area <<entity>> {
+  + id : string
+  + slug : string
+  + name : string
+  + city : CityCode
+  + latitude : number
+  + longitude : number
+  + rent : RentRange
+  + monthlyExpenses : MonthlyExpenses
+  + livingScores : LivingScores
+  + amenities : AmenityCounts
+}
+
+class Destination <<entity>> {
+  + id : string
+  + name : string
+  + city : CityCode
+  + category : string
+  + latitude : number
+  + longitude : number
+}
+
+class RecommendationPreferences <<entity>> {
+  + city : CityCode
+  + monthlyBudget : number
+  + maximumRent : number
+  + destination : Object | null
+  + maximumDistanceKm : number
+  + priorities : Object
+}
+
+class RecommendedArea <<entity>> {
+  + areaId : string
+  + rank : number
+  + totalScore : number
+  + budgetScore : number
+  + commuteScore : number
+  + amenitiesScore : number
+  + environmentScore : number
+  + totalEstimatedCost : number
+  + leftoverBudget : number
+  + distanceKm : number | null
+  + reasons : string[]
+}
+
+RecommendationsPage *-- PreferenceForm
+RecommendationsPage "1" o-- "0..*" RecommendationCard
+RecommendationsPage --> StoreContext : uses (useStore)
+RecommendationsPage ..> RecommendationEngine : calls recommendAreas()
+RecommendationsPage ..> RecommendationPreferences : holds state
+PreferenceForm ..> Destination : selects from
+RecommendationCard --> Area : displays
+RecommendationCard --> RecommendedArea : displays
+RecommendationCard --> StoreContext : toggleComparison()
+StoreContext "1" o-- "0..*" Area : manages
+RecommendationEngine ..> CostCalculator : calls
+RecommendationEngine ..> DistanceCalculator : calls (Haversine)
+RecommendationEngine ..> Area : reads
+RecommendationEngine ..> RecommendationPreferences : reads
+RecommendationEngine ..> RecommendedArea : produces
+@enduml

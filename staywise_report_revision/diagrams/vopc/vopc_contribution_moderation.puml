@@ -1,0 +1,95 @@
+@startuml vopc_contribution_moderation
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam classStereotypeFontSize 11
+skinparam classAttributeIconSize 0
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #17324D
+  HeaderBackgroundColor #EAF0F6
+  FontColor #182230
+}
+
+title VOPC Diagram — UC_06: Đóng góp dữ liệu và kiểm duyệt cộng đồng
+
+class ContributePage <<boundary>> {
+  + handleFormSubmit(data : ContributionFormData) : void
+  + render() : JSX.Element
+}
+
+class ContributionForm <<boundary>> {
+  + areas : Area[]
+  + onSubmitSuccess(data : ContributionFormData) : void
+  - onFormSubmit(data : ContributionFormData) : void
+}
+
+class AdminContributionsPage <<boundary>> {
+  - activeTab : string
+  - selectedCategory : string
+  + handleApprove(id : string, author : string) : void
+  + handleReject(id : string, author : string) : void
+}
+
+class CommunityPage <<boundary>> {
+  - selectedCity : string
+  - selectedAreaId : string
+  - selectedCategory : string
+  - sortBy : string
+  + approvedContributions : Contribution[]
+}
+
+class ContributionValidator <<control>> {
+  + contributionFormSchema : ZodSchema
+  + parse(data : unknown) : ContributionFormData
+}
+
+class StoreContext <<control>> {
+  + areas : Area[]
+  + contributions : Contribution[]
+  + submitContribution(data) : Contribution
+  + approveContribution(id : string) : void
+  + rejectContribution(id : string) : void
+}
+
+class ToastContext <<control>> {
+  + success(title : string, message? : string) : void
+  + warning(title : string, message? : string) : void
+}
+
+class storageService <<control>> {
+  + getContributions() : Contribution[]
+  + saveContributions(contributions : Contribution[]) : void
+}
+
+class Contribution <<entity>> {
+  + id : string
+  + areaId : string
+  + authorName : string
+  + category : ContributionCategory
+  + rating : number
+  + content : string
+  + status : ContributionStatus
+  + createdAt : string
+  + updatedAt? : string
+}
+
+class Area <<entity>> {
+  + id : string
+  + name : string
+  + displayCity : string
+}
+
+ContributePage *-- ContributionForm
+ContributePage --> StoreContext : submitContribution()
+ContributePage --> ToastContext : success()
+ContributionForm ..> ContributionValidator : zodResolver()
+AdminContributionsPage --> StoreContext : approve / reject
+AdminContributionsPage --> ToastContext : success() / warning()
+CommunityPage --> StoreContext : reads approved
+StoreContext --> storageService : persists via
+StoreContext "1" o-- "0..*" Contribution : manages
+StoreContext "1" o-- "0..*" Area : manages
+Contribution "0..*" --> "1" Area : references areaId
+@enduml

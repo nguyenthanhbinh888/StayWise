@@ -11,3 +11,11 @@ yarn-error.log*
 .vercel
 *.tsbuildinfo
 next-env.d.ts
+
+# Prompt, spec, planning, and AI-workflow markdown files (keep README.md)
+*.md
+!/README.md
+
+# Python bytecode
+__pycache__/
+*.py[cod]

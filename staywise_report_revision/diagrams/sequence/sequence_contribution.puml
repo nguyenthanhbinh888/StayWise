@@ -1,0 +1,79 @@
+@startuml sequence_contribution
+!pragma layout smetana
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam maxMessageSize 220
+
+skinparam participant {
+  BackgroundColor #EAF0F6
+  BorderColor #17324D
+  FontColor #17324D
+  FontStyle bold
+}
+skinparam actor {
+  BackgroundColor #FFFFFF
+  BorderColor #17324D
+}
+skinparam database {
+  BackgroundColor #F7F9FC
+  BorderColor #475569
+}
+
+title Biểu đồ Trình tự (UC_06 - Luồng A): Người dùng gửi đóng góp trải nghiệm
+
+actor "Người dùng" as User
+participant "ContributionForm\n<<component>>" as Form
+participant "contributionFormSchema\n<<module: Zod>>" as Zod
+participant "ContributePage\n<<component>>" as Page
+participant "StoreContext\n<<context>>" as Store
+participant "storageService\n<<module>>" as Storage
+database "localStorage\n<<browser>>" as LS
+participant "ToastContext\n<<context>>" as Toast
+
+User -> Form : 1. Nhập authorName, areaId, category,\nrating (1..5), content & nhấn Submit
+activate Form
+
+Form -> Zod : 2. zodResolver(contributionFormSchema).validate(data)
+activate Zod
+
+alt Dữ liệu không hợp lệ (rỗng, < 10 ký tự, rating ngoài 1..5)
+  Zod --> Form : 3a. ValidationError (field errors)
+  Form --> User : 4a. Hiển thị thông báo lỗi dưới từng trường\n(Không lưu dữ liệu)
+else Dữ liệu hợp lệ
+  Zod --> Form : 3b. Validated ContributionFormData
+  deactivate Zod
+
+  Form -> Page : 4b. onSubmitSuccess(data)
+  activate Page
+
+  Page -> Store : 5. submitContribution(data)
+  activate Store
+
+  Store -> Store : 6. Tạo Contribution mới\n(id, status = "pending", createdAt)
+  Store -> Storage : 7. saveContributions(next)
+  activate Storage
+  Storage -> LS : 8. setItem("staywise_contributions", JSON)
+  activate LS
+  LS --> Storage : 9. OK
+  deactivate LS
+  Storage --> Store : 10. void
+  deactivate Storage
+
+  Store --> Page : 11. newContribution : Contribution
+  deactivate Store
+
+  Page -> Toast : 12. success("Gửi đóng góp thành công!", ...)
+  activate Toast
+  Toast --> User : 13. Hiển thị Toast thông báo chờ duyệt
+  deactivate Toast
+
+  Form -> Form : 14. reset() biểu mẫu
+  Page --> User : 15. Cập nhật mục "Lịch sử đóng góp trên thiết bị này"\nvới nhãn "Chờ Admin duyệt" (pending)
+  deactivate Page
+end
+
+deactivate Form
+@enduml
